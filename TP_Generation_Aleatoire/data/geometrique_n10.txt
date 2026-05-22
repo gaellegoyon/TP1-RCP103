@@ -1,0 +1,13 @@
+# Distribution : geometrique
+# n = 10 valeurs
+# Seed = 2 (groupe 2)
+1
+1
+5
+1
+3
+4
+1
+1
+1
+4

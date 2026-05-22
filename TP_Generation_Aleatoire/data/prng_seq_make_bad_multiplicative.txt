@@ -1,0 +1,15 @@
+# Multiplicatif court (a=6, m=13)
+# periode detectee = 12
+2
+12
+7
+3
+5
+4
+11
+1
+6
+10
+8
+9
+2

@@ -1,0 +1,13 @@
+# Distribution : poisson
+# n = 10 valeurs
+# Seed = 2 (groupe 2)
+1
+1
+2
+0
+2
+1
+4
+1
+3
+3
