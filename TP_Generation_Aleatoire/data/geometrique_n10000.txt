@@ -1,4 +1,4 @@
-# Distribution : geometrique
+# Loi : geometrique
 # n = 10000 valeurs
 # Seed = 2 (groupe 2)
 1

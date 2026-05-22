@@ -1,4 +1,4 @@
-# TP — Génération de variables aléatoires (RCP103)
+# TP1 — Génération de variables aléatoires (RCP103)
 
 Évaluation des performances des systèmes informatiques — CNAM Paris, NCA USEEJ7.
 
@@ -7,44 +7,44 @@
 
 ---
 
-## Paramètres officiels du groupe 2
+## Paramètres du groupe 2
 
-D'après le tableau du cours (page 5 du sujet) :
+D'après le tableau du sujet (page 5) :
 
-| Distribution             | Paramètres                                    |
-| ------------------------ | --------------------------------------------- |
-| Uniforme discrète        | `(min=10, max=30)`                            |
-| Uniforme continue        | `(min=1.0, max=3.0)`                          |
-| Normale                  | `μ = 0`, `σ = 0.75`  (couple `(0, 0.75)`)     |
-| Exponentielle            | moyenne `e = 2` (donc `λ = 1/2`)              |
-| Distribution additionnelle | **Géométrique** avec `p = 0.3`              |
+| Distribution             | Paramètres                                  |
+| ------------------------ | ------------------------------------------- |
+| Uniforme discrète        | `(min=10, max=30)`                          |
+| Uniforme continue        | `(min=1.0, max=3.0)`                        |
+| Normale                  | `μ = 0`, `σ = 0.75`                         |
+| Exponentielle            | moyenne `e = 2` (donc `λ = 1/2`)            |
+| Loi supplémentaire       | Géométrique avec `p = 0.3`                  |
 
-Toutes les simulations utilisent `seed = 2` afin que les résultats soient strictement reproductibles.
+Toutes les simulations utilisent `seed = 2`, ce qui permet de reproduire les mêmes nombres à chaque exécution.
 
 ---
 
-## Structure du projet
+## Organisation du projet
 
 ```
 TP_Generation_Aleatoire/
 ├── README.md
 ├── rapport/
 │   ├── rapport.tex          ← Source LaTeX du rapport
-│   ├── rapport.pdf          ← À générer (cf. ci-dessous)
+│   ├── rapport.pdf          ← À générer (voir plus bas)
 │   └── figures/             ← Toutes les figures (PDF + PNG)
 ├── src/
 │   ├── generators.py        ← Générateurs congruentiels (LCG, multiplicatif)
-│   ├── distributions.py     ← Génération des lois (5 + Bernoulli + Poisson)
-│   ├── plots.py             ← Traceurs (histogrammes, paires, LLN)
-│   └── main.py              ← Point d'entrée — fixe seed=2 et lance tout
-└── data/                    ← Suites de valeurs générées (n=10/100/1000/10000)
+│   ├── distributions.py     ← Génération des 5 lois (+ Bernoulli, Poisson)
+│   ├── plots.py             ← Fonctions de tracé
+│   └── main.py              ← Script principal (seed=2 fixé ici)
+└── data/                    ← Suites générées (n = 10, 100, 1000, 10000)
 ```
 
 ---
 
-## 1. Reproduire les simulations Python
+## 1. Lancer la simulation Python
 
-Pré-requis : Python 3, NumPy, Matplotlib (SciPy facultatif).
+Pré-requis : Python 3 + NumPy + Matplotlib.
 
 ```bash
 cd src/
@@ -52,81 +52,53 @@ python3 main.py
 ```
 
 Le script :
-1. Affiche dans la console les 10 premières valeurs pour chaque loi et chaque `n`.
-2. Sauve les suites complètes dans `data/<loi>_n<n>.txt`.
-3. Régénère toutes les figures dans `rapport/figures/` (PDF + PNG).
+1. Affiche dans la console un aperçu des valeurs et les statistiques pour chaque loi.
+2. Sauve toutes les suites dans `data/<loi>_n<n>.txt`.
+3. Trace toutes les figures dans `rapport/figures/` (PDF + PNG).
 
-Toutes les exécutions produisent **exactement** les mêmes nombres grâce à `seed=2`.
+Comme la seed est fixée à 2, les résultats sont strictement reproductibles.
 
 ---
 
 ## 2. Générer le PDF du rapport
 
-Le rapport est rédigé en LaTeX. Comme indiqué dans la consigne du professeur, le rapport est destiné à être compilé sur **Overleaf**.
-
-### Méthode A — Overleaf (recommandée par la consigne)
+Le rapport est en LaTeX. Le sujet recommande **Overleaf** :
 
 1. Aller sur [https://www.overleaf.com](https://www.overleaf.com).
 2. *New Project* → *Upload Project*.
-3. Téléverser une archive ZIP contenant le dossier `rapport/`
-   (`rapport.tex` + dossier `figures/`).
-4. Overleaf détecte automatiquement `rapport.tex` comme fichier principal.
-5. Cliquer sur *Recompile* → le PDF apparaît à droite.
+3. Téléverser le dossier `rapport/` (avec `rapport.tex` et `figures/`).
+4. Overleaf devrait détecter `rapport.tex` automatiquement.
+5. *Recompile* → le PDF s'affiche.
 
-> Astuce : si Overleaf ne détecte pas le bon fichier principal, ouvrir
-> *Menu → Main document* et choisir `rapport.tex`.
-
-### Méthode B — Compilation locale (si vous avez TeX Live installé)
-
+Si on a TeX Live installé en local, on peut aussi compiler avec :
 ```bash
 cd rapport/
 pdflatex rapport.tex
-pdflatex rapport.tex   # 2e passe pour la table des matières
+pdflatex rapport.tex   # 2 passes pour la table des matières
 ```
 
-Le PDF `rapport.pdf` est généré dans `rapport/`.
+---
+
+## 3. Plan du rapport
+
+1. Introduction
+2. Objectifs
+3. Un peu de théorie (LCG, transformée inverse, Box-Muller, Knuth)
+4. Notre implémentation
+5. Partie 1 — Générateurs pseudo-aléatoires (séquences, périodes, RANDU en 3D)
+6. Partie 2 — Lois discrètes (uniforme, Bernoulli, géométrique, Poisson)
+7. Partie 3 — Lois continues (uniforme, exponentielle, normale)
+8. Partie 4 — Analyse (loi des grands nombres, lien avec les systèmes)
+9. Conclusion
+
+Chaque figure est légendée et commentée.
 
 ---
 
-## 3. Contenu du rapport
+## 4. Fichiers de données
 
-Le rapport couvre :
-
-1. **Introduction** — pourquoi générer des variables aléatoires en évaluation de performances.
-2. **Objectifs** — rappel des paramètres du groupe 2.
-3. **Théorie & méthodes** — LCG, multiplicatif, Hull-Dobell, transformée inverse, Box-Muller, Knuth.
-4. **Implémentation** — organisation du code.
-5. **Partie I — PRNG** — sequences, périodes, histogrammes, test des paires (Marsaglia / RANDU).
-6. **Partie II — Lois discrètes** — uniforme discrète `(10,30)`, Bernoulli(0.3), géométrique(0.3), Poisson(2).
-7. **Partie III — Lois continues** — uniforme `(1.0, 3.0)`, exponentielle (moy. = 2), normale $\mathcal{N}(0, 0.75)$.
-8. **Partie IV — Analyse** — convergence (loi des grands nombres), impact du nombre d'échantillons, lien avec les systèmes informatiques.
-9. **Conclusion**.
-
-Chaque figure est légendée et accompagnée d'une lecture détaillée.
+Le dossier `data/` contient un fichier `.txt` par loi et par valeur de `n`, soit 4 fichiers par loi. Ces fichiers permettent de vérifier les résultats sans relancer le code.
 
 ---
 
-## 4. Fichiers de données générés
-
-Le dossier `data/` contient, pour chaque distribution, **quatre** fichiers texte
-(`*_n10.txt`, `*_n100.txt`, `*_n1000.txt`, `*_n10000.txt`) avec, dans chaque
-fichier, exactement `n` valeurs. Ces fichiers permettent une vérification
-indépendante du code.
-
----
-
-## 5. Bibliothèques utilisées
-
-| Bibliothèque | Rôle                              |
-| ------------ | --------------------------------- |
-| `numpy`      | génération du `U ~ U(0,1)`, vecteurs |
-| `matplotlib` | tracés (histogrammes, scatter, LLN)|
-
-Aucune fonction « toute prête » comme `numpy.random.exponential` n'est utilisée
-pour générer les lois : la *mécanique* de chaque génération (transformée inverse,
-Box-Muller, Knuth) est implémentée explicitement, conformément à l'objectif
-pédagogique du TP.
-
----
-
-*Pedro Braconnot Velloso — RCP103, CNAM Paris — Groupe 2.*
+*RCP103 — TP1 — Groupe 2.*

@@ -1,4 +1,4 @@
-# Distribution : exponentielle
+# Loi : exponentielle
 # n = 1000 valeurs
 # Seed = 2 (groupe 2)
 2.6817845514594785

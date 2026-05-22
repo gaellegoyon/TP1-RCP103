@@ -1,4 +1,4 @@
-# Distribution : uniforme_continue
+# Loi : uniforme_continue
 # n = 10000 valeurs
 # Seed = 2 (groupe 2)
 1.5232242684986328

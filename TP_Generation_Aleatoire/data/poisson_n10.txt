@@ -1,4 +1,4 @@
-# Distribution : poisson
+# Loi : poisson
 # n = 10 valeurs
 # Seed = 2 (groupe 2)
 1

@@ -1,4 +1,4 @@
-# Distribution : bernoulli
+# Loi : bernoulli
 # n = 1000 valeurs
 # Seed = 2 (groupe 2)
 1

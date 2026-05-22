@@ -2,74 +2,66 @@
 distributions.py
 ================
 
-Generation de variables aleatoires a partir de l'uniforme U ~ U([0, 1)).
+Generation des differentes lois a partir de l'uniforme U sur [0, 1).
 
-Toutes les fonctions de ce module prennent un nombre `n` d'echantillons
-et un parametre `rng` (un objet numpy.random.Generator). Cela permet de
-fixer la graine une seule fois (seed = 2 pour le groupe 2) et d'avoir
-des resultats reproductibles.
+On utilise la classe numpy.random.Generator pour obtenir U,
+mais on code "a la main" la transformation U -> loi voulue
+(plutot que d'appeler numpy.random.exponential par exemple).
+L'idee est de montrer comment ca marche.
 
-Les algorithmes sont implementes "a la main" (transformee inverse,
-Box-Muller, etc.) plutot que d'appeler numpy.random.exponential ou
-numpy.random.normal directement, afin de bien montrer la mecanique.
-La seule fonction de numpy utilisee en interne est `rng.random()` qui
-fournit l'uniforme de base.
+Toutes les fonctions prennent :
+  - n   : le nombre de valeurs a generer
+  - les parametres de la loi
+  - rng : un numpy.random.Generator (avec seed=2 pour notre groupe)
 
-Auteur : Groupe 2 - RCP103 - CNAM
+TP1 RCP103 - Groupe 2 (seed = 2)
 """
 
-from __future__ import annotations
-
 import math
-from typing import Tuple
-
 import numpy as np
 
 
 # =============================================================================
-# 1. Lois discretes
+# Lois discretes
 # =============================================================================
 
-def uniforme_discrete(n: int, a: int, b: int, rng: np.random.Generator) -> np.ndarray:
+def uniforme_discrete(n, a, b, rng):
     """Loi uniforme discrete sur {a, a+1, ..., b}.
 
-    Algorithme : on tire U ~ U([0, 1)) puis X = a + floor((b - a + 1) * U).
-    P(X = k) = 1 / (b - a + 1) pour k = a, ..., b.
+    On tire U sur [0,1) puis on calcule a + floor((b - a + 1) * U).
+    Chaque entier de a a b a la meme probabilite 1/(b-a+1).
     """
     u = rng.random(n)
     return a + np.floor((b - a + 1) * u).astype(int)
 
 
-def bernoulli(n: int, p: float, rng: np.random.Generator) -> np.ndarray:
-    """Loi de Bernoulli : X = 1 avec probabilite p, 0 sinon.
-
-    Algorithme : X = 1 si U < p, sinon 0.
-    """
+def bernoulli(n, p, rng):
+    """Loi de Bernoulli : X = 1 si U < p, sinon X = 0."""
     u = rng.random(n)
     return (u < p).astype(int)
 
 
-def geometrique(n: int, p: float, rng: np.random.Generator) -> np.ndarray:
-    """Loi geometrique de parametre p (support {1, 2, 3, ...}).
+def geometrique(n, p, rng):
+    """Loi geometrique de parametre p (support 1, 2, 3, ...).
 
-    Modelise le nombre d'essais Bernoulli(p) jusqu'a obtenir le premier succes.
-    P(X = k) = (1 - p)^(k-1) * p, E[X] = 1/p.
+    On utilise la transformee inverse :
+        X = ceil( ln(1 - U) / ln(1 - p) )
 
-    Algorithme par transformee inverse :
-        Si U ~ U(0, 1), alors X = ceil(ln(1 - U) / ln(1 - p)) suit la geometrique.
-        On peut remplacer (1 - U) par U car les deux sont uniformes.
+    Cette loi compte le nombre d'essais avant le premier succes
+    dans une suite de Bernoulli(p).
+    E[X] = 1/p.
     """
     u = rng.random(n)
-    # ceil pour eviter X = 0 et obtenir le support {1, 2, ...}.
-    # log(1 - p) < 0 donc on divise un nombre <= 0 par un nombre < 0 : resultat >= 0.
+    # log(1 - p) est negatif et log(1 - U) aussi -> resultat positif.
     return np.ceil(np.log(1.0 - u) / np.log(1.0 - p)).astype(int)
 
 
-def poisson(n: int, lam: float, rng: np.random.Generator) -> np.ndarray:
+def poisson(n, lam, rng):
     """Loi de Poisson de parametre lambda (algorithme de Knuth).
 
-    On tire des U_i iid jusqu'a ce que leur produit passe sous e^{-lambda} ;
-    X = nombre de U_i tires moins 1.
+    On tire des U_i un par un et on multiplie. Des que le produit
+    passe sous exp(-lambda), on s'arrete et X est le nombre de tirages
+    qu'on a fait (moins 1).
     """
     L = math.exp(-lam)
     out = np.empty(n, dtype=int)
@@ -86,39 +78,39 @@ def poisson(n: int, lam: float, rng: np.random.Generator) -> np.ndarray:
 
 
 # =============================================================================
-# 2. Lois continues
+# Lois continues
 # =============================================================================
 
-def uniforme_continue(n: int, a: float, b: float,
-                      rng: np.random.Generator) -> np.ndarray:
-    """Loi uniforme continue sur [a, b]. Algorithme : X = a + (b - a) U."""
+def uniforme_continue(n, a, b, rng):
+    """Loi uniforme continue sur [a, b]. Formule : X = a + (b - a) * U."""
     u = rng.random(n)
     return a + (b - a) * u
 
 
-def exponentielle(n: int, mean: float, rng: np.random.Generator) -> np.ndarray:
-    """Loi exponentielle de moyenne `mean` (taux lambda = 1 / mean).
+def exponentielle(n, mean, rng):
+    """Loi exponentielle de moyenne `mean` (donc lambda = 1/mean).
 
-    Algorithme par transformee inverse :
-        F(x) = 1 - exp(-lambda * x)  =>  X = -ln(1 - U) / lambda
-        On utilise X = -mean * ln(U) (equivalent car U et 1 - U sont uniformes).
+    Transformee inverse :
+        F(x) = 1 - exp(-x/mean)  =>  X = -mean * ln(1 - U)
+    On peut remplacer 1 - U par U car les deux sont uniformes,
+    d'ou X = -mean * ln(U).
     """
     u = rng.random(n)
-    # On evite log(0) en bornant U tres legerement au dessus de 0.
+    # On evite log(0) si jamais U vaut 0 (tres improbable, mais bon).
     u = np.clip(u, 1e-12, 1.0)
     return -mean * np.log(u)
 
 
-def normale(n: int, mu: float, sigma: float,
-            rng: np.random.Generator) -> np.ndarray:
-    """Loi normale N(mu, sigma) generee par Box-Muller (forme cartesienne).
+def normale(n, mu, sigma, rng):
+    """Loi normale N(mu, sigma) generee avec Box-Muller.
 
-    Si U1, U2 ~ U(0, 1) iid alors
-        Z1 = sqrt(-2 ln U1) cos(2 pi U2)
-        Z2 = sqrt(-2 ln U1) sin(2 pi U2)
-    sont N(0, 1) independants. On retourne ensuite mu + sigma * Z.
+    A partir de deux uniformes U1, U2 independantes :
+        Z1 = sqrt(-2 * ln U1) * cos(2 * pi * U2)
+        Z2 = sqrt(-2 * ln U1) * sin(2 * pi * U2)
+    Z1 et Z2 sont N(0, 1) independants.
+    Ensuite on retourne mu + sigma * Z.
     """
-    # On tire des paires pour utiliser les deux sorties Z1 et Z2.
+    # On tire des paires pour utiliser Z1 et Z2 en meme temps.
     n_pairs = (n + 1) // 2
     u1 = rng.random(n_pairs)
     u2 = rng.random(n_pairs)
@@ -134,20 +126,11 @@ def normale(n: int, mu: float, sigma: float,
 
 
 # =============================================================================
-# 3. Statistiques theoriques (pour comparaison)
+# Statistiques theoriques (utilisees pour comparer avec la simulation)
 # =============================================================================
 
-def stats_theoriques(distribution: str, **params) -> Tuple[float, float]:
-    """Retourne (moyenne, ecart-type) theoriques pour controle.
-
-    distribution :
-      - 'uniforme_discrete' : params a, b
-      - 'uniforme_continue' : params a, b
-      - 'exponentielle'      : params mean
-      - 'normale'            : params mu, sigma
-      - 'geometrique'        : params p
-      - 'bernoulli'          : params p
-    """
+def stats_theoriques(distribution, **params):
+    """Renvoie (moyenne, ecart-type) theoriques pour controler nos resultats."""
     d = distribution
     if d == "uniforme_discrete":
         a, b = params["a"], params["b"]
@@ -162,7 +145,8 @@ def stats_theoriques(distribution: str, **params) -> Tuple[float, float]:
         return mean, math.sqrt(var)
     if d == "exponentielle":
         mean = params["mean"]
-        return mean, mean  # sigma = mean pour l'exponentielle
+        # Particularite : pour l'exponentielle, ecart-type = moyenne.
+        return mean, mean
     if d == "normale":
         return params["mu"], params["sigma"]
     if d == "geometrique":

@@ -1,4 +1,4 @@
-# Distribution : normale
+# Loi : normale
 # n = 10 valeurs
 # Seed = 2 (groupe 2)
 -0.16495022631031137
