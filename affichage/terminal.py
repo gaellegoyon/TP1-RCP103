@@ -1,18 +1,13 @@
-"""
-Affichage des valeurs générées dans le terminal.
-"""
+"""Affichage des valeurs générées dans le terminal."""
 
 import numpy as np
-from config.parametres import VALEURS_N
 
 
-def afficher_valeurs(nom: str, label: str, generateur_fn) -> None:
-    """Affiche dans le terminal les valeurs générées pour chaque n."""
-
+def afficher_valeurs(nom: str, label: str, generateur_fn, valeurs_n: list) -> None:
     print(f"\n{'═' * 60}")
     print(f"  {label}")
     print(f"{'═' * 60}")
 
-    for n in VALEURS_N:
+    for n in valeurs_n:
         valeurs = generateur_fn(n)
-        print(f"\n  n = {n:>6,}  →  {valeurs}")
+        print(f"\n  n = {n:>7,}  →  {valeurs}")

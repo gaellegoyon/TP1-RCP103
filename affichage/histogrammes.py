@@ -1,41 +1,82 @@
-"""
-Génération et sauvegarde des histogrammes.
-Un histogramme individuel par (distribution, n) + une figure overlay 2x2.
-"""
+"""Génération et sauvegarde des histogrammes."""
 
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from scipy import stats
 
-from config.parametres import VALEURS_N, GRAINE
+from config.parametres import (
+    UNIF_ENTIERE_MIN, UNIF_ENTIERE_MAX,
+    GRAINE,
+    UNIF_REELLE_MIN, UNIF_REELLE_MAX,
+    NORMALE_MOYENNE, NORMALE_ECART_TYPE,
+    EXPONENTIELLE_MOYENNE,
+    GEOMETRIQUE_P,
+)
 
 DOSSIER_FIGURES = "figures"
 DPI             = 150
 TAILLE_FIGURE   = (6, 4)
 
-# Une couleur par valeur de n
 COULEURS = {
     10:      "#4C72B0",
     100:     "#DD8452",
     1_000:   "#55A868",
     10_000:  "#C44E52",
+    100_000: "#8172B2",
 }
 
 
-def _calculer_bins(valeurs: np.ndarray, est_discrete: bool):
-    """Calcule les bins adaptés au type de distribution."""
+def _calculer_bins(valeurs: np.ndarray, est_discrete: bool, n: int):
     if est_discrete:
-        # Une barre par valeur entière présente
         minimum = int(valeurs.min())
         maximum = int(valeurs.max())
         return np.arange(minimum, maximum + 2) - 0.5
-    # Règle de Sturges pour les distributions continues
-    return max(10, min(60, int(np.ceil(np.log2(len(valeurs)) + 1))))
+    nb_bins = int(np.sqrt(n))
+    return max(20, min(120, nb_bins))
+
+
+def _courbe_theorique(ax, nom_distribution: str, valeurs: np.ndarray) -> None:
+    x_min, x_max = valeurs.min(), valeurs.max()
+    x = np.linspace(x_min, x_max, 500)
+
+    if nom_distribution == "Uniforme réelle":
+        y = stats.uniform.pdf(x, loc=UNIF_REELLE_MIN,
+                              scale=UNIF_REELLE_MAX - UNIF_REELLE_MIN)
+
+    elif nom_distribution == "Normale":
+        y = stats.norm.pdf(x, loc=NORMALE_MOYENNE, scale=NORMALE_ECART_TYPE)
+
+    elif nom_distribution == "Exponentielle":
+        y = stats.expon.pdf(x, scale=EXPONENTIELLE_MOYENNE)
+
+    elif nom_distribution == "Uniforme entière":
+        nb_valeurs = UNIF_ENTIERE_MAX - UNIF_ENTIERE_MIN + 1
+        p_theorique = 1 / nb_valeurs
+        ax.hlines(p_theorique, UNIF_ENTIERE_MIN - 0.5, UNIF_ENTIERE_MAX + 0.5,
+                  colors="red", linewidth=1.8, label="Théorique", zorder=5)
+        ax.legend(fontsize=7)
+        return
+
+    elif nom_distribution == "Géométrique":
+        k = np.arange(1, int(valeurs.max()) + 1)
+        p_theorique = GEOMETRIQUE_P * (1 - GEOMETRIQUE_P) ** (k - 1)
+        k_cont = np.linspace(1, int(valeurs.max()), 500)
+        p_cont = GEOMETRIQUE_P * (1 - GEOMETRIQUE_P) ** (k_cont - 1)
+        ax.plot(k_cont, p_cont, color="red", linewidth=1.8,
+                label="Théorique", zorder=5)
+        ax.legend(fontsize=7)
+        return
+
+    else:
+        return
+
+    ax.plot(x, y, color="red", linewidth=1.8, label="Théorique", zorder=5)
+    ax.legend(fontsize=7)
 
 
 def _boite_statistiques(valeurs: np.ndarray, n: int) -> str:
-    """Formate les statistiques descriptives à afficher sur la figure."""
     return (
         f"n = {n:,}\n"
         f"µ̂ = {valeurs.mean():.4f}\n"
@@ -46,26 +87,27 @@ def _boite_statistiques(valeurs: np.ndarray, n: int) -> str:
 
 
 def sauvegarder_histogramme(
-    valeurs:      np.ndarray,
-    titre:        str,
-    label_x:      str,
-    n:            int,
-    est_discrete: bool,
-    chemin:       str,
+    valeurs:          np.ndarray,
+    titre:            str,
+    label_x:          str,
+    nom_distribution: str,
+    n:                int,
+    est_discrete:     bool,
+    chemin:           str,
 ) -> None:
-    """Génère et sauvegarde un histogramme pour une distribution et un n donné."""
     fig, ax = plt.subplots(figsize=TAILLE_FIGURE)
 
-    bins   = _calculer_bins(valeurs, est_discrete)
+    bins    = _calculer_bins(valeurs, est_discrete, n)
     couleur = COULEURS[n]
 
     ax.hist(valeurs, bins=bins, color=couleur, edgecolor="white",
-            linewidth=0.4, density=True, alpha=0.85)
+            linewidth=0.3, density=True, alpha=0.75)
+
+    _courbe_theorique(ax, nom_distribution, valeurs)
 
     ax.set_title(f"{titre}  –  n = {n:,}", fontsize=11, fontweight="bold", pad=8)
     ax.set_xlabel(label_x, fontsize=9)
     ax.set_ylabel("Densité de probabilité", fontsize=9)
-
     ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.3f"))
     ax.grid(axis="y", linestyle="--", linewidth=0.5, alpha=0.6)
     ax.set_axisbelow(True)
@@ -73,12 +115,12 @@ def sauvegarder_histogramme(
     ax.text(
         0.98, 0.97,
         _boite_statistiques(valeurs, n),
-        transform          = ax.transAxes,
-        fontsize           = 7.5,
-        verticalalignment  = "top",
-        horizontalalignment= "right",
-        bbox               = dict(boxstyle="round,pad=0.4", facecolor="white",
-                                  edgecolor="#cccccc", alpha=0.85),
+        transform           = ax.transAxes,
+        fontsize            = 7.5,
+        verticalalignment   = "top",
+        horizontalalignment = "right",
+        bbox                = dict(boxstyle="round,pad=0.4", facecolor="white",
+                                   edgecolor="#cccccc", alpha=0.85),
     )
 
     fig.tight_layout()
@@ -88,43 +130,43 @@ def sauvegarder_histogramme(
 
 
 def sauvegarder_overlay(
-    nom:          str,
-    label:        str,
+    nom:              str,
+    label:            str,
     generateur_fn,
-    est_discrete: bool,
-    chemin:       str,
+    valeurs_n:        list,
+    est_discrete:     bool,
+    chemin:           str,
 ) -> None:
-    """Génère une figure 2×2 avec un subplot par valeur de n."""
-    fig, axes = plt.subplots(2, 2, figsize=(11, 7))
-    fig.suptitle(
-        f"{label}  –  Graine = {GRAINE}",
-        fontsize=13, fontweight="bold", y=1.01,
-    )
+    fig, axes = plt.subplots(3, 2, figsize=(11, 13))
+    fig.suptitle(f"{label}  –  Graine = {GRAINE}",
+                 fontsize=13, fontweight="bold")
 
-    for ax, n in zip(axes.flat, VALEURS_N):
+    for ax, n in zip(axes.flat, valeurs_n):
         valeurs = generateur_fn(n)
-        bins    = _calculer_bins(valeurs, est_discrete)
+        bins    = _calculer_bins(valeurs, est_discrete, n)
         couleur = COULEURS[n]
 
         ax.hist(valeurs, bins=bins, color=couleur, edgecolor="white",
-                linewidth=0.4, density=True, alpha=0.85)
+                linewidth=0.3, density=True, alpha=0.75)
 
-        stats = f"µ̂={valeurs.mean():.3f}  σ̂={valeurs.std():.3f}"
-        ax.set_title(f"n = {n:,}   ({stats})", fontsize=9)
+        _courbe_theorique(ax, nom, valeurs)
+
+        stats_str = f"µ̂={valeurs.mean():.3f}  σ̂={valeurs.std():.3f}"
+        ax.set_title(f"n = {n:,}   ({stats_str})", fontsize=9)
         ax.set_xlabel(nom, fontsize=8)
         ax.set_ylabel("Densité", fontsize=8)
         ax.grid(axis="y", linestyle="--", linewidth=0.4, alpha=0.5)
         ax.set_axisbelow(True)
         ax.tick_params(labelsize=7)
 
+    axes.flat[len(valeurs_n)].set_visible(False)
+
     fig.tight_layout()
     fig.savefig(chemin, dpi=DPI, bbox_inches="tight")
     plt.close(fig)
     print(f"  ✔  Overlay sauvegardé : {chemin}")
 
-
 def generer_tous_les_histogrammes(distributions: list[dict]) -> None:
-    """Génère tous les histogrammes pour toutes les distributions."""
     os.makedirs(DOSSIER_FIGURES, exist_ok=True)
 
     for dist in distributions:
@@ -133,28 +175,29 @@ def generer_tous_les_histogrammes(distributions: list[dict]) -> None:
         generateur   = dist["generateur"]
         est_discrete = dist["est_discrete"]
         nom_fichier  = dist["nom_fichier"]
+        valeurs_n    = dist["valeurs_n"]
 
         print(f"\n── {nom} ──")
 
-        # Histogrammes individuels
-        for n in VALEURS_N:
+        for n in valeurs_n:
             valeurs = generateur(n)
             chemin  = os.path.join(DOSSIER_FIGURES, f"{nom_fichier}_n{n}.png")
             sauvegarder_histogramme(
-                valeurs      = valeurs,
-                titre        = label,
-                label_x      = nom,
-                n            = n,
-                est_discrete = est_discrete,
-                chemin       = chemin,
+                valeurs          = valeurs,
+                titre            = label,
+                label_x          = nom,
+                nom_distribution = nom,
+                n                = n,
+                est_discrete     = est_discrete,
+                chemin           = chemin,
             )
 
-        # Figure overlay 2×2
         chemin_overlay = os.path.join(DOSSIER_FIGURES, f"{nom_fichier}_overlay.png")
         sauvegarder_overlay(
-            nom          = nom,
-            label        = label,
-            generateur_fn= generateur,
-            est_discrete = est_discrete,
-            chemin       = chemin_overlay,
+            nom           = nom,
+            label         = label,
+            generateur_fn = generateur,
+            valeurs_n     = valeurs_n,
+            est_discrete  = est_discrete,
+            chemin        = chemin_overlay,
         )
